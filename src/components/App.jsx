@@ -3,85 +3,61 @@ import Searchbar from './Searchbar/Searchbar';
 import Modal from './Modal/Modal';
 import Loader from './Loader/Loader';
 import ImageGallery from './ImageGallery/ImageGallery';
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './App.module.css';
 import { getImages } from 'http/getImages';
 
-export class App extends Component {
-  constructor() {
-    super();
+export const App = () => {
+  const [isLoading, setIsLoadindg] = useState(false);
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [currentSearchString, setCurrentSearchString] = useState('');
+  const [largeImageUrl, setLargeImageUrl] = useState(null);
 
-    this.state = {
-      isLoading: false,
-      images: [],
-      page: 1,
-      currentSearchString: '',
-      largeImageUrl: null,
-    };
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.page !== this.state.page && this.state.page !== 1) {
-      this.setState({ isLoading: true });
-      getImages(this.state.currentSearchString, this.state.page).then(data => {
-        this.setState({
-          images: this.state.images.concat(data.hits),
-          isLoading: false,
-        });
+  useEffect(() => {
+    if (page !== 1) {
+      setIsLoadindg(true);
+      getImages(currentSearchString, page).then(data => {
+        setImages(images.concat(data.hits));
+        setIsLoadindg(false);
       });
     }
-  }
+  }, [page]);
 
-  handleSearch(searchString) {
+  const handleSearch = searchString => {
     getImages(searchString, 1).then(data => {
-      this.setState({
-        images: data.hits,
-        currentSearchString: searchString,
-        isLoading: false,
-        page: 1,
-      });
+      setImages(data.hits);
+      setCurrentSearchString(searchString);
+      setIsLoadindg(false);
+      setPage(1);
     });
-  }
+  };
 
-  loadNextPage() {
-    this.setState({ page: this.state.page + 1 });
-  }
+  const loadNextPage = () => {
+    setPage(page + 1);
+  };
 
-  onClickItem(id) {
-    const currentImage = this.state.images.find(image => {
+  const onClickItem = id => {
+    const currentImage = images.find(image => {
       return id === image.id;
     });
 
-    this.setState({
-      largeImageUrl: currentImage.largeImageURL,
-    });
-  }
+    setLargeImageUrl(currentImage.largeImageURL);
+  };
 
-  closeModal() {
-    this.setState({
-      largeImageUrl: null,
-    });
-  }
+  const closeModal = () => {
+    setLargeImageUrl(null);
+  };
 
-  render() {
-    return (
-      <div className={styles.App}>
-        <Searchbar onSubmit={this.handleSearch.bind(this)} />
-        <ImageGallery
-          onClickItem={this.onClickItem.bind(this)}
-          images={this.state.images}
-        />
-        {!!this.state.images.length ? (
-          <Button onClick={this.loadNextPage.bind(this)} />
-        ) : null}
-        <Loader isShown={this.state.isLoading} />
-        {this.state.largeImageUrl ? (
-          <Modal
-            imgUrl={this.state.largeImageUrl}
-            closeModal={this.closeModal.bind(this)}
-          />
-        ) : null}
-      </div>
-    );
-  }
-}
+  return (
+    <div className={styles.App}>
+      <Searchbar onSubmit={handleSearch} />
+      <ImageGallery onClickItem={onClickItem} images={images} />
+      {!!images.length ? <Button onClick={loadNextPage} /> : null}
+      <Loader isShown={isLoading} />
+      {largeImageUrl ? (
+        <Modal imgUrl={largeImageUrl} closeModal={closeModal} />
+      ) : null}
+    </div>
+  );
+};

@@ -1,45 +1,48 @@
-import React, { Component } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import styles from './Modal.module.css';
 
-export class Modal extends Component {
-  componentDidMount() {
-    document.addEventListener('keydown', this.onKeyUp.bind(this));
-  }
+const Modal = props => {
+  const { closeModal, imgUrl } = props;
 
-  componentWillUnmount() {
-    document.removeEventListener('keydown', this.onKeyUp);
-  }
+  const onKeyUp = useCallback(
+    event => {
+      if (event.key === 'Escape') {
+        closeModal();
+      }
+    },
+    [closeModal]
+  );
 
-  onKeyUp(event) {
-    if (event.key === 'Escape') {
-      this.props.closeModal();
-    }
-  }
+  useEffect(() => {
+    document.addEventListener('keydown', onKeyUp);
 
-  onClick(event) {
+    return () => {
+      document.removeEventListener('keydown', onKeyUp);
+    };
+  }, [onKeyUp]);
+
+  const onClick = event => {
     if (event.currentTarget !== event.target) {
       return;
     }
 
-    this.props.closeModal();
-  }
+    closeModal();
+  };
 
-  render() {
-    return (
-      <div
-        onClick={this.onClick.bind(this)}
-        onKeyUp={this.onKeyPress}
-        className={styles.Overlay}
-        tabIndex="0"
-      >
-        <div className={styles.Modal}>
-          <img src={this.props.imgUrl} alt="largeImage" />
-        </div>
+  return (
+    <div
+      onClick={onClick}
+      onKeyUp={onKeyUp}
+      className={styles.Overlay}
+      tabIndex="0"
+    >
+      <div className={styles.Modal}>
+        <img src={imgUrl} alt="largeImage" />
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
 
 Modal.propTypes = {
   closeModal: PropTypes.func.isRequired,
